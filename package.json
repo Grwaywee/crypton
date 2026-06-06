@@ -1,0 +1,10 @@
+{
+  "name": "crypton",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Token-rotation digital document security — implements KR patent 2024-0302KR.",
+  "license": "UNLICENSED",
+  "workspaces": [
+    "packages/*"
+  ]
+}
