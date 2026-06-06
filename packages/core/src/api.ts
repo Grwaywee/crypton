@@ -2,11 +2,13 @@ import { z } from 'zod';
 import { ContainerSchema } from './container';
 import { TokenSchema } from './token';
 
+// Note: ownerId / userId are NOT accepted from the request body — they are derived
+// from the authenticated access token server-side. Trusting a body-supplied identity
+// would let any caller act as any user.
 export const PublishRequestSchema = z.object({
   title: z.string().min(1),
   contentBase64: z.string().min(1),
   priceCents: z.number().int().nonnegative(),
-  ownerId: z.string().min(1),
 });
 export type PublishRequest = z.infer<typeof PublishRequestSchema>;
 
@@ -19,7 +21,6 @@ export const TitleSchema = z.object({
 export type Title = z.infer<typeof TitleSchema>;
 
 export const PurchaseRequestSchema = z.object({
-  userId: z.string().min(1),
   doc: z.string().min(1),
   /** PG payment token placeholder — payment precedes any download */
   paymentToken: z.string().optional(),
@@ -27,7 +28,6 @@ export const PurchaseRequestSchema = z.object({
 export type PurchaseRequest = z.infer<typeof PurchaseRequestSchema>;
 
 export const DownloadRequestSchema = z.object({
-  userId: z.string().min(1),
   doc: z.string().min(1),
 });
 export type DownloadRequest = z.infer<typeof DownloadRequestSchema>;

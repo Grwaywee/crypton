@@ -13,7 +13,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=flat-square&logo=typescript&logoColor=white)
 ![Node](https://img.shields.io/badge/Node-%E2%89%A5%2022-339933?style=flat-square&logo=node.js&logoColor=white)
 ![Fastify](https://img.shields.io/badge/Fastify-5.x-000000?style=flat-square&logo=fastify&logoColor=white)
-![tests](https://img.shields.io/badge/tests-29%20passing-brightgreen?style=flat-square)
+![tests](https://img.shields.io/badge/tests-34%20passing-brightgreen?style=flat-square)
 [![CI](https://img.shields.io/github/actions/workflow/status/Grwaywee/crypton/ci.yml?style=flat-square&label=CI&logo=github)](https://github.com/Grwaywee/crypton/actions/workflows/ci.yml)
 ![license](https://img.shields.io/badge/license-proprietary-lightgrey?style=flat-square)
 
@@ -33,7 +33,8 @@
 - 💳 **전자서점 내장** — 결제가 다운로드의 선행조건, 카피(copy) 단위 토큰 계보로 다수 구매자 지원.
 - 📴 **오프라인 유예** — 한 번 온라인으로 열면 유효시간 동안 오프라인 열람 가능.
 - 🔔 **실시간 알림 + 감사 로그** — 다른 기기에서 열린 사실을 웹소켓으로 통지, 모든 발급/회전/거부를 기록.
-- 🧪 **테스트 우선** — 핵심 동작 29개를 `node:test`로 검증, 엔드투엔드 데모 포함.
+- 🔐 **인증·하드닝** — JWT 인증(신원은 본문이 아닌 **검증된 토큰에서 도출**), scrypt 비밀번호 해싱, 보안 헤더(helmet)·CORS·레이트리밋.
+- 🧪 **테스트 우선** — 핵심 동작 34개를 `node:test`로 검증, 엔드투엔드 데모 포함.
 
 ## 🏗️ 아키텍처
 
@@ -89,7 +90,7 @@ A 열람 (T1→T2)  →  A가 T2 든 파일을 B에 공유  →  B 열람 (T2→
 
 ```bash
 npm install        # 의존성 설치
-npm test           # 전체 테스트 (29개)
+npm test           # 전체 테스트 (34개)
 npm run demo       # 엔드투엔드 시연: 권한 이전까지 한눈에
 npm run typecheck  # 타입체크
 ```
@@ -118,6 +119,7 @@ CRYPTON_SERVER_URL=http://127.0.0.1:7070 \
 | 언어 | **TypeScript** | 5.7 |
 | 런타임 | **Node.js** | ≥ 22 |
 | 서버 | **Fastify** | 5.x |
+| 인증·보안 | **@fastify/jwt · helmet · cors · rate-limit** · scrypt | — |
 | 실시간 | **@fastify/websocket** | 11.x |
 | 스키마 검증 | **Zod** | 3.x |
 | 암호 | **AES-256-GCM** · **HMAC-SHA256** · UUIDv7 | `node:crypto` |

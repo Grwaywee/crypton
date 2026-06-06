@@ -8,32 +8,39 @@ import { MemoryCekCache, ViewerClient } from '@crypton/viewer';
 
 async function startServer() {
   const app = await buildApp({
-    config: { masterSecret: randomBytes(32), tokenTtlSeconds: 3600, serverUrl: 'http://placeholder' },
+    config: {
+      masterSecret: randomBytes(32),
+      tokenTtlSeconds: 3600,
+      serverUrl: 'http://placeholder',
+      jwtSecret: 'test-jwt-secret-test-jwt-secret-0123456789',
+      jwtExpiresIn: '1h',
+      corsOrigins: [],
+    },
+    rateLimit: false,
   });
   await app.listen({ port: 0, host: '127.0.0.1' });
   const { port } = app.server.address() as AddressInfo;
   return { app, base: `http://127.0.0.1:${port}` };
 }
 
-async function postJson(base: string, path: string, body: unknown): Promise<any> {
-  const res = await fetch(`${base}${path}`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+async function postJson(base: string, path: string, body: unknown, token?: string): Promise<any> {
+  const headers: Record<string, string> = { 'content-type': 'application/json' };
+  if (token) headers.authorization = `Bearer ${token}`;
+  const res = await fetch(`${base}${path}`, { method: 'POST', headers, body: JSON.stringify(body) });
   return res.json();
 }
 
 async function provision(base: string, text = 'classified payload'): Promise<CryptonContainer> {
+  const { token } = await postJson(base, '/auth/register', { email: 'u@x.com', password: 'password123' });
   const content = Buffer.from(text, 'utf8');
-  const { doc } = await postJson(base, '/titles', {
-    title: 'Doc',
-    contentBase64: content.toString('base64'),
-    priceCents: 100,
-    ownerId: 'pub',
-  });
-  await postJson(base, '/purchase', { userId: 'alice', doc });
-  const { container } = await postJson(base, '/download', { userId: 'alice', doc });
+  const { doc } = await postJson(
+    base,
+    '/titles',
+    { title: 'Doc', contentBase64: content.toString('base64'), priceCents: 100 },
+    token,
+  );
+  await postJson(base, '/purchase', { doc }, token);
+  const { container } = await postJson(base, '/download', { doc }, token);
   return container as CryptonContainer;
 }
 

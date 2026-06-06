@@ -12,10 +12,14 @@
       <p class="muted">
         토큰 회전 기반 문서 보안 — 한 시점에 유효한 토큰은 하나. 열 때마다 회전합니다.
       </p>
-      <label class="identity">
-        내 계정(userId)
-        <input id="userId" value="alice" />
-      </label>
+      <div class="identity" id="authPanel">
+        <input id="email" type="email" placeholder="email" value="alice@example.com" autocomplete="username" />
+        <input id="password" type="password" placeholder="password" value="password123" autocomplete="current-password" />
+        <button id="registerBtn" type="button">회원가입</button>
+        <button id="loginBtn" type="button" class="primary">로그인</button>
+        <span id="whoami" class="muted"></span>
+        <button id="logoutBtn" type="button" style="display: none">로그아웃</button>
+      </div>
     </header>
 
     <main>

@@ -1,3 +1,15 @@
+import type { Role } from '@crypton/core';
+
+/** A registered user. The password hash is server-only and never leaves the store. */
+export interface UserRecord {
+  id: string;
+  email: string;
+  passwordHash: string;
+  role: Role;
+  displayName?: string;
+  createdAt: number;
+}
+
 /** A catalog title — one record per unique content (고유값). Holds server-only secrets. */
 export interface TitleRecord {
   /** 고유값 (PK) */
@@ -43,6 +55,10 @@ export interface AuditEntry {
 }
 
 export interface Store {
+  putUser(u: UserRecord): Promise<void>;
+  getUserById(id: string): Promise<UserRecord | undefined>;
+  getUserByEmail(email: string): Promise<UserRecord | undefined>;
+
   putTitle(t: TitleRecord): Promise<void>;
   getTitle(doc: string): Promise<TitleRecord | undefined>;
   listTitles(): Promise<TitleRecord[]>;

@@ -10,6 +10,9 @@ const app = await buildApp({
     masterSecret: config.masterSecret,
     tokenTtlSeconds: config.tokenTtlSeconds,
     serverUrl: config.serverUrl,
+    jwtSecret: config.jwtSecret,
+    jwtExpiresIn: config.jwtExpiresIn,
+    corsOrigins: config.corsOrigins,
   },
   logger: true,
 });

@@ -2,10 +2,29 @@
 
 const $ = (id) => document.getElementById(id);
 const LIB_KEY = 'crypton.library';
+const TOKEN_KEY = 'crypton.token';
+const USER_KEY = 'crypton.user';
 
-function getUserId() {
-  return $('userId').value.trim() || 'alice';
+// --- auth state ------------------------------------------------------------
+const getToken = () => localStorage.getItem(TOKEN_KEY) || '';
+function setAuth(token, user) {
+  localStorage.setItem(TOKEN_KEY, token);
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+  renderAuth();
 }
+function clearAuth() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
+  renderAuth();
+}
+function currentUser() {
+  try {
+    return JSON.parse(localStorage.getItem(USER_KEY) || 'null');
+  } catch {
+    return null;
+  }
+}
+
 function loadLibrary() {
   try {
     return JSON.parse(localStorage.getItem(LIB_KEY) || '[]');
@@ -21,19 +40,27 @@ function log(msg, cls) {
   const el = document.createElement('div');
   if (cls) el.className = cls;
   el.textContent = `${new Date().toLocaleTimeString()}  ${msg}`;
-  const box = $('log');
-  box.prepend(el);
+  $('log').prepend(el);
 }
 
 async function api(path, body) {
+  const headers = {};
+  if (body) headers['content-type'] = 'application/json';
+  const token = getToken();
+  if (token) headers.authorization = `Bearer ${token}`;
   const res = await fetch(path, {
     method: body ? 'POST' : 'GET',
-    headers: body ? { 'content-type': 'application/json' } : undefined,
+    headers,
     body: body ? JSON.stringify(body) : undefined,
   });
   const text = await res.text();
-  const json = text ? JSON.parse(text) : {};
-  return { status: res.status, json };
+  return { status: res.status, json: text ? JSON.parse(text) : {} };
+}
+
+function requireLogin() {
+  if (getToken()) return true;
+  log('로그인이 필요합니다', 'bad');
+  return false;
 }
 
 // --- base64 + WebCrypto AES-256-GCM (the in-browser "web viewer") ----------
@@ -50,7 +77,6 @@ async function decryptPayload(container, cekB64) {
   const iv = b64ToBytes(container.manifest.enc.iv);
   const ct = b64ToBytes(container.ciphertext);
   const tag = b64ToBytes(container.manifest.enc.authTag);
-  // WebCrypto expects ciphertext || authTag concatenated.
   const data = new Uint8Array(ct.length + tag.length);
   data.set(ct, 0);
   data.set(tag, ct.length);
@@ -59,6 +85,48 @@ async function decryptPayload(container, cekB64) {
 }
 
 const short = (s) => (s ? `${String(s).slice(0, 8)}…${String(s).slice(-4)}` : '');
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  })[c]);
+}
+
+// --- auth actions ----------------------------------------------------------
+async function register() {
+  const { status, json } = await api('/api/auth/register', {
+    email: $('email').value.trim(),
+    password: $('password').value,
+  });
+  if (status === 201) {
+    setAuth(json.token, json.user);
+    log(`회원가입 + 로그인: ${json.user.email}`, 'ok');
+  } else {
+    log(`회원가입 실패 (${status}: ${json.error || ''})`, 'bad');
+  }
+}
+async function login() {
+  const { status, json } = await api('/api/auth/login', {
+    email: $('email').value.trim(),
+    password: $('password').value,
+  });
+  if (status === 200) {
+    setAuth(json.token, json.user);
+    log(`로그인: ${json.user.email}`, 'ok');
+  } else {
+    log(`로그인 실패 (${status}: ${json.error || ''})`, 'bad');
+  }
+}
+function renderAuth() {
+  const u = currentUser();
+  const loggedIn = Boolean(u && getToken());
+  $('whoami').textContent = loggedIn ? `로그인됨: ${u.email}` : '';
+  $('logoutBtn').style.display = loggedIn ? '' : 'none';
+  $('loginBtn').style.display = loggedIn ? 'none' : '';
+  $('registerBtn').style.display = loggedIn ? 'none' : '';
+  $('email').disabled = loggedIn;
+  $('password').disabled = loggedIn;
+}
 
 // --- catalog ---------------------------------------------------------------
 async function refreshCatalog() {
@@ -75,7 +143,7 @@ async function refreshCatalog() {
     card.innerHTML = `
       <div class="meta">
         <span class="title">${escapeHtml(t.title)}</span>
-        <span class="sub">doc ${short(t.doc)} · ${t.priceCents}c · ${escapeHtml(t.ownerId)}</span>
+        <span class="sub">doc ${short(t.doc)} · ${t.priceCents}c</span>
       </div>
       <div class="actions">
         <button data-buy="${t.doc}">구매</button>
@@ -86,23 +154,23 @@ async function refreshCatalog() {
 }
 
 async function buy(doc) {
-  const userId = getUserId();
-  const { status } = await api('/api/purchase', { userId, doc });
-  if (status === 201) log(`구매 완료 — ${userId} → ${short(doc)}`, 'ok');
+  if (!requireLogin()) return;
+  const { status } = await api('/api/purchase', { doc });
+  if (status === 201) log(`구매 완료 — ${short(doc)}`, 'ok');
   else log(`구매 실패 (${status})`, 'bad');
 }
 
 async function download(doc) {
-  const userId = getUserId();
-  const { status, json } = await api('/api/download', { userId, doc });
+  if (!requireLogin()) return;
+  const { status, json } = await api('/api/download', { doc });
   if (status !== 200) {
     log(`다운로드 거부 (${status}) — 먼저 구매하세요`, 'bad');
     return;
   }
   const lib = loadLibrary();
-  lib.push({ owner: userId, container: json.container });
+  lib.push({ container: json.container });
   saveLibrary(lib);
-  log(`다운로드 — copy ${short(json.container.manifest.copyId)} (토큰 ${short(json.container.manifest.token.tid)})`, 'ok');
+  log(`다운로드 — copy ${short(json.container.manifest.copyId)}`, 'ok');
   renderLibrary();
 }
 
@@ -122,7 +190,7 @@ function renderLibrary() {
     card.innerHTML = `
       <div class="meta">
         <span class="title">${escapeHtml(m.title)}</span>
-        <span class="sub">copy ${short(m.copyId)} · 현재 토큰 ${short(m.token.tid)}</span>
+        <span class="sub">copy ${short(m.copyId)} · 토큰 ${short(m.token.tid)}</span>
       </div>
       <div class="actions">
         <button class="primary" data-open="${idx}">열기</button>
@@ -138,13 +206,14 @@ async function openCopy(idx) {
   const item = lib[idx];
   if (!item) return;
   const before = item.container.manifest.token.tid;
+  // /open is authenticated by the rotating copy token, not the user session.
   const { status, json } = await api('/api/open', {
     copyId: item.container.manifest.copyId,
     token: item.container.manifest.token,
   });
   if (status !== 200 || !json.viewStart) {
     $('viewer').innerHTML = `<span class="badge bad">VIEW DENIED</span>  ${json.reason || status}`;
-    log(`열람 거부 — ${json.reason || status} (토큰 ${short(before)} 은 더 이상 유효하지 않음)`, 'bad');
+    log(`열람 거부 — ${json.reason || status} (토큰 ${short(before)} 무효)`, 'bad');
     return;
   }
   let text;
@@ -155,8 +224,7 @@ async function openCopy(idx) {
     log(`복호화 실패: ${e}`, 'bad');
     return;
   }
-  // rotate the embedded token forward and persist (S390)
-  item.container.manifest.token = json.token;
+  item.container.manifest.token = json.token; // rotate forward (S390)
   saveLibrary(lib);
   $('viewer').innerHTML =
     `<span class="badge ok">VIEW GRANTED</span>  토큰 회전 ${short(before)} → ${short(json.token.tid)}\n\n` +
@@ -185,22 +253,23 @@ function removeCopy(idx) {
   renderLibrary();
 }
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-  })[c]);
-}
-
 // --- wiring ----------------------------------------------------------------
+$('registerBtn').addEventListener('click', register);
+$('loginBtn').addEventListener('click', login);
+$('logoutBtn').addEventListener('click', () => {
+  clearAuth();
+  log('로그아웃', 'ok');
+});
+
 $('publishForm').addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (!requireLogin()) return;
   const content = $('pubContent').value;
   const contentBase64 = btoa(unescape(encodeURIComponent(content)));
   const { status, json } = await api('/api/titles', {
     title: $('pubTitle').value,
     contentBase64,
     priceCents: Number($('pubPrice').value) || 0,
-    ownerId: getUserId(),
   });
   if (status === 201) {
     log(`문서 등록 — doc ${short(json.doc)}`, 'ok');
@@ -220,5 +289,6 @@ document.addEventListener('click', (e) => {
   else if (t.dataset.remove) removeCopy(Number(t.dataset.remove));
 });
 
+renderAuth();
 refreshCatalog();
 renderLibrary();

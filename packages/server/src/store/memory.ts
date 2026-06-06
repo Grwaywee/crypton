@@ -4,6 +4,7 @@ import type {
   EntitlementRecord,
   Store,
   TitleRecord,
+  UserRecord,
 } from './types';
 
 /**
@@ -13,6 +14,8 @@ import type {
  * set). Swap in a Postgres + Redis adapter behind the same interface for production.
  */
 export class MemoryStore implements Store {
+  private users = new Map<string, UserRecord>();
+  private usersByEmail = new Map<string, string>();
   private titles = new Map<string, TitleRecord>();
   private copies = new Map<string, CopyRecord>();
   private entitlements = new Set<string>();
@@ -20,6 +23,22 @@ export class MemoryStore implements Store {
 
   private static entKey(userId: string, doc: string): string {
     return `${userId}::${doc}`;
+  }
+
+  private static emailKey(email: string): string {
+    return email.trim().toLowerCase();
+  }
+
+  async putUser(u: UserRecord): Promise<void> {
+    this.users.set(u.id, u);
+    this.usersByEmail.set(MemoryStore.emailKey(u.email), u.id);
+  }
+  async getUserById(id: string): Promise<UserRecord | undefined> {
+    return this.users.get(id);
+  }
+  async getUserByEmail(email: string): Promise<UserRecord | undefined> {
+    const id = this.usersByEmail.get(MemoryStore.emailKey(email));
+    return id ? this.users.get(id) : undefined;
   }
 
   async putTitle(t: TitleRecord): Promise<void> {
