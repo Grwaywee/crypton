@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>crypton 전자서점</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>crypton <span class="muted">전자서점</span></h1>
+      <p class="muted">
+        토큰 회전 기반 문서 보안 — 한 시점에 유효한 토큰은 하나. 열 때마다 회전합니다.
+      </p>
+      <label class="identity">
+        내 계정(userId)
+        <input id="userId" value="alice" />
+      </label>
+    </header>
+
+    <main>
+      <section class="panel">
+        <h2>① 문서 등록 <span class="muted">(출판사)</span></h2>
+        <form id="publishForm">
+          <input id="pubTitle" placeholder="제목" value="Q3 전략 보고서" required />
+          <textarea id="pubContent" rows="3" placeholder="문서 내용(평문)">CONFIDENTIAL — Q3 go-to-market strategy.
+재배포 금지.</textarea>
+          <div class="row">
+            <input id="pubPrice" type="number" min="0" value="2900" /> <span class="muted">원(cents)</span>
+            <button type="submit">등록</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel">
+        <h2>② 카탈로그</h2>
+        <div id="catalog" class="list"></div>
+      </section>
+
+      <section class="panel">
+        <h2>③ 내 서재 <span class="muted">(다운로드한 카피)</span></h2>
+        <div id="library" class="list"></div>
+      </section>
+
+      <section class="panel viewer">
+        <h2>④ 뷰어 <span class="muted">(브라우저 내 복호화)</span></h2>
+        <div id="viewer" class="viewer-body muted">서재에서 "열기"를 누르세요.</div>
+      </section>
+
+      <section class="panel">
+        <h2>로그</h2>
+        <div id="log" class="log"></div>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

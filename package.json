@@ -1,10 +1,23 @@
 {
   "name": "crypton",
   "private": true,
-  "version": "0.0.0",
-  "description": "Token-rotation digital document security — implements KR patent 2024-0302KR.",
+  "version": "0.1.0",
+  "description": "토큰 회전 기반 디지털 문서 보안 시스템.",
   "license": "UNLICENSED",
+  "type": "module",
   "workspaces": [
     "packages/*"
-  ]
+  ],
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "node --import tsx --test \"packages/**/test/**/*.test.ts\"",
+    "demo": "tsx scripts/demo.ts",
+    "dev:server": "tsx packages/server/src/main.ts",
+    "dev:platform": "tsx packages/platform/src/main.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
 }
