@@ -10,6 +10,7 @@ import {
   type OpenResponse,
   type OpenSuccess,
 } from '@crypton/core';
+import type { KeyProvider } from './keys';
 import type { CopyRecord, Store, TitleRecord } from './store/types';
 
 export interface AuthorityConfig {
@@ -28,6 +29,7 @@ export class TokenAuthority {
   constructor(
     private readonly store: Store,
     private readonly cfg: AuthorityConfig,
+    private readonly keys: KeyProvider,
   ) {}
 
   private docKey(doc: string): Buffer {
@@ -52,7 +54,7 @@ export class TokenAuthority {
       server: this.cfg.serverUrl,
       copyId,
       token,
-      cek: Buffer.from(title.cek, 'base64'),
+      cek: this.keys.unwrap(title.cekWrapped), // released from the envelope only to encrypt this copy
     });
     const now = Date.now();
     const copy: CopyRecord = {
@@ -123,7 +125,7 @@ export class TokenAuthority {
     const ok: OpenSuccess = {
       viewStart: true,
       token: t2,
-      cek: title.cek,
+      cek: this.keys.unwrap(title.cekWrapped).toString('base64'), // unwrapped only on view-start
       graceSeconds: this.cfg.tokenTtlSeconds,
     };
     return ok;

@@ -8,7 +8,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "start": "tsx src/main.ts",
+    "start": "node --experimental-sqlite --disable-warning=ExperimentalWarning --import tsx src/main.ts",
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {

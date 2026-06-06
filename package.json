@@ -10,9 +10,9 @@
   ],
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "test": "node --import tsx --test \"packages/**/test/**/*.test.ts\"",
+    "test": "node --experimental-sqlite --disable-warning=ExperimentalWarning --import tsx --test \"packages/**/test/**/*.test.ts\"",
     "demo": "tsx scripts/demo.ts",
-    "dev:server": "tsx packages/server/src/main.ts",
+    "dev:server": "node --experimental-sqlite --disable-warning=ExperimentalWarning --import tsx packages/server/src/main.ts",
     "dev:platform": "tsx packages/platform/src/main.ts"
   },
   "devDependencies": {

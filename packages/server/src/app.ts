@@ -21,6 +21,7 @@ import fastifyRateLimit from '@fastify/rate-limit';
 import fastifyWebsocket from '@fastify/websocket';
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import { TokenAuthority } from './authority';
+import { LocalKeyProvider } from './keys';
 import { Notifier } from './notify';
 import { hashPassword, verifyPassword } from './passwords';
 import { MemoryStore } from './store/memory';
@@ -68,11 +69,12 @@ export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> 
   const cfg = opts.config;
   const store = opts.store ?? new MemoryStore();
   const notifier = opts.notifier ?? new Notifier();
-  const authority = new TokenAuthority(store, {
-    masterSecret: cfg.masterSecret,
-    tokenTtlSeconds: cfg.tokenTtlSeconds,
-    serverUrl: cfg.serverUrl,
-  });
+  const keys = new LocalKeyProvider(cfg.masterSecret);
+  const authority = new TokenAuthority(
+    store,
+    { masterSecret: cfg.masterSecret, tokenTtlSeconds: cfg.tokenTtlSeconds, serverUrl: cfg.serverUrl },
+    keys,
+  );
 
   const app = Fastify({ logger: opts.logger ?? false, bodyLimit: 32 * 1024 * 1024 });
 
@@ -162,7 +164,7 @@ export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> 
       title: parsed.data.title,
       ownerId: req.user.sub, // identity from the verified token, never the body
       priceCents: parsed.data.priceCents,
-      cek: existing?.cek ?? generateCek().toString('base64'),
+      cekWrapped: existing?.cekWrapped ?? keys.wrap(generateCek()), // envelope-encrypted at rest
       content: content.toString('base64'),
       createdAt: existing?.createdAt ?? Date.now(),
     };

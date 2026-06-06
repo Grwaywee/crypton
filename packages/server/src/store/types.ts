@@ -17,8 +17,8 @@ export interface TitleRecord {
   title: string;
   ownerId: string;
   priceCents: number;
-  /** base64 content encryption key (server-held; released only on view-start) */
-  cek: string;
+  /** wrapped content encryption key (envelope-encrypted at rest; never stored in the clear) */
+  cekWrapped: string;
   /** base64 original document bytes (kept server-side to mint copies on download) */
   content: string;
   createdAt: number;

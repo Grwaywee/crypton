@@ -17,6 +17,8 @@ export interface ServerConfig {
   serverUrl: string;
   /** allowed CORS origins ([] = same-origin only) */
   corsOrigins: string[];
+  /** when set, use a durable SQLite store at this path instead of in-memory */
+  sqlitePath?: string;
 }
 
 class ConfigError extends Error {}
@@ -62,5 +64,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
       .split(',')
       .map((o) => o.trim())
       .filter(Boolean),
+    sqlitePath: env.CRYPTON_SQLITE_PATH || undefined,
   };
 }
